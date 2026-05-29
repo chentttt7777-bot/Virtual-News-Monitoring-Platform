@@ -1,0 +1,2116 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>伪造新闻检测</title>
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background: url('../static/images/index_bg.png') no-repeat;
+        background-size: cover;
+        overflow: hidden;
+        width: 100%;
+    }
+
+    /* 通用主题样式*/
+    .container {
+        width: 1200px;
+        {#max-width: 2000px;#}
+        {#width: 100%;#}
+        display: flex;
+        background-color: #ffffff;
+        /* padding: 30px; */
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border-radius: 12px;
+        flex-shrink: 0;
+        flex-grow: 0;
+    }
+    /* 版本切换下拉菜单样式 */
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    background-color: #fff;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+    border-radius: 8px;
+    padding: 0;
+}
+
+.dropdown-menu.show {
+    display: block;
+}
+
+.dropdown-item {
+    color: #333;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    transition: background-color 0.3s;
+}
+
+.dropdown-item:hover {
+    background-color: #f1f1f1;
+}
+
+/* 版本提示toast */
+.version-toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 10000;
+
+}
+
+.version-toast.show {
+    opacity: 1;
+}
+
+
+
+    /* 顶部导航栏样式*/
+    .top-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        background-color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        transition: all 0.3s ease;
+
+        /* width: 1920px; */
+        height: 74px;
+        background: rgba(255, 255, 255, 0.49);
+        border: 1px solid #FFFFFF;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .top-nav .logo {
+        margin-left: 20px;
+        height: 51px;
+        flex: 1;
+
+        img {
+            height: 100%;
+        }
+    }
+
+    .top-nav .top-center {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 89px;
+    }
+
+    .top-nav .top-center a {
+        text-decoration: none;
+        font-weight: 400;
+        font-size: 18px;
+        color: #141414;
+        line-height: 25px;
+        transition: color 0.3s ease;
+
+    }
+
+    .top-nav .top-center a:hover {
+        font-weight: 600;
+    }
+
+    .active-nav {
+        position: relative;
+    }
+
+    .active-nav::after {
+        position: absolute;
+        content: '';
+        bottom: -8px;
+        left: 50%;
+        transform: translateX(-50%);
+
+
+        width: 17px;
+        height: 3px;
+        background: #4152E7;
+        border-radius: 3px;
+    }
+
+    .active-nav a {
+        font-weight: 600 !important;
+    }
+
+    .top-nav .top-right {
+        flex: 1;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        margin-right: 20px;
+    }
+
+    .login {
+        width: 82px;
+        height: 42px;
+        background: #1E33FF;
+        border-radius: 7px;
+        font-size: 18px;
+        color: #FFFFFF;
+        text-align: left;
+        font-style: normal;
+        border: none;
+        text-align: center;
+        cursor: pointer;
+    }
+
+    .login:hover {
+        opacity: 0.8;
+        transform: translateY(-2px);
+    }
+
+    .top-nav ul {
+        flex: 1;
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        transition: all 0.3s ease;
+        /* 添加过渡效果*/
+    }
+
+    .top-nav ul li {
+        margin: 0 15px;
+        display: flex;
+        /* 新增 */
+        align-items: center;
+        /* 新增 */
+    }
+
+    .top-nav ul li a {
+        text-decoration: none;
+        color: #333;
+        font-size: 16px;
+        padding: 15px 20px;
+        display: block;
+        transition: color 0.3s ease;
+    }
+
+    .top-nav ul li a:hover {
+        color: #3498db;
+    }
+
+    /* 修改按钮容器样式 */
+    .top-nav ul li:last-child {
+        gap: 10px;
+        /* 按钮间距 */
+    }
+
+    .content-wrapper {
+        margin-top: 30px;
+        /* 确保内容区域不被导航栏遮挡 */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        /* height: calc(100vh - 60px); */
+        /* 减去导航栏的高度 */
+        /*background: url('../static/images/bg.png') no-repeat;*/
+        background-size: cover;
+        transition: all 0.3s ease;
+        /* 添加过渡效果 */
+        min-width: 1049px;
+        width: 100%;
+        height: auto;
+    }
+
+    .left-a {
+        flex-shrink: 0;
+        flex-grow: 0;
+        width: 1200px;
+        margin-right: 24px;
+        /* width: 100%; */
+        /* 初始宽度为 100% */
+        transition: all 0.3s ease;
+        /* 添加过渡效果 */
+    }
+
+    .left-a.shrink {
+        {#width: 66.66%;#}
+        width: 1200px;
+        /* 缩小为原来的三分之二 */
+    }
+
+    .container {
+        {#margin-top: 30px;#}
+        {#width: 100%;#}
+        width: 1200px;
+        max-width: 1200px;
+        display: flex;
+        /* background-color: #ffffff; */
+        height: 100%;
+        /* padding: 30px; */
+        /* box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); */
+        transition: all 0.3s ease;
+        background: linear-gradient(to bottom, rgba(255, 255, 255, 0.41), rgba(249, 248, 255, 0.5));
+        box-shadow: 0px 9px 21px 0px rgba(157, 149, 176, 0.23);
+        border: 2px solid rgba(177, 210, 255, 0.30);
+        /* border-image-source: linear-gradient(to bottom, rgba(199, 216, 255, 1), rgba(177, 210, 255, 0.30));
+        border-image-slice: 0.5; */
+        border-radius: 12px;
+        flex-shrink: 0;
+        flex-grow: 0;
+        /* 添加过渡效果 */
+    }
+
+    .left-panel {
+        flex: 2;
+        padding: 36px 24px 22px 44px;
+    }
+
+    .right-panel {
+        flex-grow: 0;
+        flex-shrink: 0;
+        flex: 1;
+        padding: 20px;
+        border-left: 1px solid #eaeaea;
+    }
+
+    .header {
+        margin-top: 117px;
+        text-align: center;
+        /* margin-bottom: 30px; */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .header img {
+        /* width: 80px; */
+    }
+
+    .header h1 {
+        font-size: 48px;
+        background: linear-gradient(270deg, rgba(40, 157, 255, 1), rgba(121, 62, 229, 1));
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        display: inline-block;
+        margin-top: 12px;
+        font-weight: 600;
+        margin-bottom: 0;
+    }
+
+    .description {
+        color: #7f8c8d;
+        margin-bottom: 0px;
+        text-align: center;
+        font-size: 18px;
+        line-height: 1.6;
+    }
+
+    .input-method {
+        margin-bottom: 30px;
+    }
+
+    .input-method h2 {
+        color: #34495e;
+        font-size: 18px;
+        margin-bottom: 15px;
+        font-weight: 800;
+    }
+
+    .file-upload {
+        margin-bottom: 20px;
+    }
+
+    .text-input textarea {
+        width: 100%;
+        padding: 12px;
+        /* border: 1px solid #eaeaea; */
+        border-radius: 8px;
+        height: 150px;
+        resize: none;
+        font-size: 14px;
+        color: #34495e;
+        transition: border-color 0.3s ease;
+        /* box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); */
+    }
+
+    .text-input textarea:focus {
+        /* border-color: #3498db; */
+        outline: none;
+        /* box-shadow: 0 4px 8px rgba(52, 152, 219, 0.2); */
+    }
+
+    .file-upload input {
+        width: 97%;
+        padding: 12px;
+        border: 1px solid #eaeaea;
+        border-radius: 8px;
+        font-size: 14px;
+        color: #000000;
+        background-color: #f9fafb;
+        cursor: pointer;
+        transition: border-color 0.3s ease;
+    }
+
+    .file-upload input:focus {
+        border-color: #3498db;
+        outline: none;
+    }
+
+    .result {
+        margin-top: 30px;
+        text-align: center;
+    }
+
+    .result h2 {
+        color: #34495e;
+        font-size: 18px;
+        margin-bottom: 15px;
+        font-weight: 500;
+    }
+
+    .progress-bar {
+        background-color: #eaeaea;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-top: 10px;
+        width: 100%;
+        height: 12px;
+    }
+
+    .progress {
+        background-color: #3498db;
+        height: 100%;
+        width: 0%;
+        transition: width 0.5s ease;
+    }
+
+    .result p {
+        color: #7f8c8d;
+        font-size: 14px;
+        margin-top: 10px;
+    }
+
+    .analysis {
+        margin-top: 30px;
+    }
+
+    .analysis h2 {
+        color: #34495e;
+        font-size: 18px;
+        margin-bottom: 15px;
+        font-weight: 800;
+    }
+
+    .analysis table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+
+    .analysis th,
+    .analysis td {
+        border: 1px solid #eaeaea;
+        padding: 12px;
+        text-align: center;
+        font-size: 14px;
+        color: #34495e;
+    }
+
+    .analysis th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+    }
+
+    .buttons {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        text-align: right;
+        width: 100%;
+        height: 83px;
+        background: #FFFFFF;
+        box-shadow: 0px -2px 4px 0px rgba(230, 230, 230, 0.5);
+        border-radius: 0px 0px 14px 14px;
+        margin-top: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: end;
+    }
+
+    .buttons button {
+        /* padding: 10px 20px; */
+        margin: 0 10px;
+        /* border: none; */
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 400;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+        /* height: 40px;
+        width: 130px; */
+        /* box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); */
+        /* line-height: 1; */
+    }
+
+    .clear-btn:hover {
+        opacity: 0.9;
+        transform: translateY(-2px);
+
+    }
+
+    .detect:hover {
+        opacity: 0.9;
+        transform: translateY(-2px);
+    }
+
+    .clear-btn:active,
+    .detect:active {
+        transform: translateY(0);
+    }
+
+    /* 统一按钮基础样式 */
+    .clear,
+    .btn-danger {
+        padding: 8px 20px !important;
+        /* 统一内边距 */
+        line-height: 1.5 !important;
+        /* 统一行高 */
+        {#height: auto !important;#}
+        /* 移除固定高度 */
+        vertical-align: middle;
+        /* 垂直居中 */
+        transform: translateY(-1px);
+        /* 微调像素对齐 */
+    }
+
+    .clear-btn {
+        width: 130px;
+        height: 52px;
+        background: #FFFFFF;
+        border-radius: 10px;
+        border: 1px solid #E1E2E4;
+        /* -webkit-text-fill-color: transparent; */
+    }
+
+    .detect {
+        width: 130px;
+        height: 52px;
+        background: linear-gradient(90deg, #6D3AE6 0%, #3857E9 100%);
+        border-radius: 10px;
+        box-sizing: border-box;
+        font-weight: 500;
+        font-size: 22px;
+        color: #FFFFFF;
+        border: none;
+    }
+
+    .btn-success {
+        width: 82px;
+        height: 42px;
+        background: rgba(255, 255, 255, 0);
+        border-radius: 7px;
+        border: 1px solid #1E33FF;
+        transition: color 0.3s ease, border-color 0.3s ease;
+
+        font-size: 18px;
+        color: #1E33FF;
+        line-height: 42px;
+        cursor: pointer;
+    }
+
+    .btn-danger {
+        width: 82px;
+        height: 42px;
+        background: rgba(255, 255, 255, 0);
+        border-radius: 7px;
+        border: 1px solid #1E33FF;
+        transition: color 0.3s ease, border-color 0.3s ease;
+
+        font-size: 18px;
+        color: #1E33FF;
+        line-height: 42px;
+        cursor: pointer;
+        box-sizing: border-box;
+        text-decoration: none;
+    }
+
+
+    .btn-success:hover {
+        opacity: 0.9;
+        transform: translateY(-2px);
+    }
+
+    .btn-danger:hover {
+        opacity: 0.9;
+        transform: translateY(-2px);
+    }
+
+    .input-menu {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .menu-btn {
+        width: 140px;
+        height: 52px;
+        background: #FFFFFF;
+        border-radius: 10px;
+        border: 1px solid #E1E2E4;
+        font-weight: 500;
+        font-size: 22px;
+        color: #0A1221;
+    }
+
+    .menu-btn.active {
+        background: linear-gradient(90deg, #6D3AE6 0%, #3656EC 100%);
+        border-radius: 10px;
+        color: white;
+    }
+
+    .menu-btn:hover {
+        transform: scale(1.1);
+    }
+
+    .text-input {
+        width: 100%;
+        height: 470px;
+        font-size: 17px;
+        background: #FFFFFF;
+        border-radius: 14px;
+        border: 1px solid #A0A6EB;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .text-input textarea {
+        width: 100%;
+        padding: 12px;
+        /* border: 1px solid #eaeaea; */
+        border-radius: 8px;
+        height: 150px;
+        resize: none;
+        font-size: 17px;
+        color: #34495e;
+        /* box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); */
+        border: none;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        height: calc(100% - 83px);
+    }
+
+    .text-input textarea:focus {
+        /* border-color: #3498db; */
+        outline: none;
+        /* box-shadow: 0 4px 8px rgba(52, 152, 219, 0.2); */
+    }
+
+    .right-a {
+         display: none;
+        /* 默认隐藏*/
+        width: 33.34%;
+        max-width: 503px;
+        /* background-color: #ffffff; */
+        padding: 30px;
+        /* min-height: 651px; */
+        height: 100%;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        /* border-radius: 12px; */
+        transition: all 0.3s ease;
+        /* 添加过渡效果 */
+        background: linear-gradient(to bottom, rgba(255, 255, 255, 0.41), rgba(249, 248, 255, 0.5));
+        box-shadow: 0px 9px 21px 0px rgba(157, 149, 176, 0.23);
+        border: 2px solid rgba(177, 210, 255, 0.30);
+        /* border-image-source: linear-gradient(to bottom, rgba(199, 216, 255, 1), rgba(177, 210, 255, 0.30));
+        border-image-slice: 0.5; */
+        border-radius: 12px;
+        {#margin-top: 30px;#}
+        box-sizing: border-box;
+    }
+
+    .right-a.show {
+        display: block;
+        /* 显示 right 板块 */
+    }
+
+    /* 添加第二个HTML文件中的样式 */
+    .right-a .green {
+        background-color: rgba(0, 128, 0, 0.5);
+    }
+
+    .right-a .yellow {
+        background-color: rgba(255, 255, 0, 0.5);
+    }
+
+    .right-a .orange {
+        background-color: rgba(255, 165, 0, 0.5);
+    }
+
+    .right-a .red {
+        background-color: rgba(255, 0, 0, 0.5);
+    }
+
+    /* 在您的CSS中添加 */
+    .right-a .chartreuse {
+        background-color: rgba(127, 255, 0, 0.5);
+    }
+
+    .right-a p.chartreuse:hover {
+        background-color: rgba(127, 255, 0, 1);
+    }
+
+    .right-a p {
+        display: inline;
+        margin: 0;
+        position: relative;
+        cursor: pointer;
+    }
+
+    .right-a p.green:hover {
+        background-color: rgba(0, 128, 0, 1);
+    }
+
+    .right-a p.yellow:hover {
+        background-color: rgba(255, 255, 0, 1);
+    }
+
+    .right-a p.orange:hover {
+        background-color: rgba(255, 165, 0, 1);
+    }
+
+    .right-a p.red:hover {
+        background-color: rgba(255, 0, 0, 1);
+    }
+
+    .right-a p {
+        display: inline;
+        margin: 0;
+        position: relative;
+        cursor: pointer;
+    }
+
+    .right-a p::after {
+        content: attr(data-probability);
+        position: absolute;
+        top: calc(100% + 5px);
+        /* 提示框距离文本底部的距离 */
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 6px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        white-space: nowrap;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        z-index: 10;
+        /* 确保提示框在其他内容之上 */
+    }
+
+    .right-a p::before {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border-width: 5px;
+        border-style: solid;
+        border-color: transparent transparent rgba(0, 0, 0, 0.8) transparent;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+        z-index: 5;
+        /* 确保箭头在提示框之下 */
+    }
+
+    .right-a p:hover::after,
+    .right-a p:hover::before {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    #scrollableTextContainer {
+        max-height: 400px;
+        /* 设置最大高度 */
+        overflow-y: auto;
+        /* 添加垂直滚动条 */
+        /* border: 1px solid #eaeaea; */
+        /* 添加边框 */
+        border-radius: 8px;
+        /* 添加圆角边框 */
+        padding: 15px;
+        /* 内边距 */
+        margin-top: 15px;
+        /* 与标题的间距*/
+        /* box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); */
+        /* 添加阴影*/
+        /* background-color: white; */
+        /* 背景色*/
+        overflow-x: hidden;
+    }
+
+    /* 美化滚动条*/
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        /* background: #888; */
+        background: #C5D4F3;
+        border-radius: 5px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+
+    .title-box {
+        position: relative;
+        width: 210px;
+        height: 45px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .title-box .img-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    .schedule-box {
+        min-width: 424px;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .schedule-box .schedule-bg {
+        width: 100%;
+        height: 101%;
+        position: absolute;
+        left: 0;
+        top: 0;
+        z-index: -1;
+    }
+
+    .schedule-box h2 {
+        /*font-size: 48px;*/
+        background: linear-gradient(270deg, rgba(40, 157, 255, 1), rgba(121, 62, 229, 1));
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        display: inline-block;
+        margin-top: 13%;
+        font-weight: 600;
+        margin-bottom: 0;
+    }
+
+    .schedule-box .data-box {
+        position: relative;
+        width: 186px;
+        height: 186px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        /*margin-top: 72px;*/
+        margin-top: 30px;
+        font-weight: bold;
+        font-size: 21px;
+    }
+
+    .schedule-box .data-box .data-txt {
+        font-size: 48px;
+    }
+
+    .schedule-box .schedule-icon {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+    }
+
+    .progressbar-box {
+        width: 360px;
+        {#width: 100%;#}
+        height: 17px;
+        position: relative;
+        margin-top: 57px;
+    }
+
+    .progressbar-box .progress-icon {
+        width: 23px;
+        height: 23px;
+        position: absolute;
+        left: 50%;
+        top: -3px;
+        transform: translateX(-50%);
+        z-index: 1;
+        background: #B7B3FD;
+        border-radius: 100%;
+        border: 1px solid #ffffff;
+    }
+
+    .progressbar-box .progress-line {
+        width: 50%;
+        height: 100%;
+        position: absolute;
+        left: 0;
+        top: 0;
+        object-fit: cover;
+        z-index: 0;
+    }
+
+    .progressbar-box .progress-bg {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        left: 0;
+        top: 0;
+        z-index: -1;
+        overflow: hidden;
+    }
+
+    .progress-line{
+        border-radius: 10px;
+    }
+
+    .download-btn {
+        /*margin-top: 145px;*/
+        margin-top: 80px;
+        width: 242px;
+        height: 52px;
+        background: linear-gradient(90deg, #6D3AE6 0%, #3857E9 100%);
+        border-radius: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #fff;
+        font-size: 22px;
+        font-weight: 500;
+        cursor: pointer;
+        border: none;
+    }
+
+    .download-btn span {
+        margin-right: 5px;
+    }
+
+    .download-btn:hover {
+        opacity: 0.8;
+        transform: translateY(-2px);
+    }
+
+    .totallength {
+        color: #7f8c8d;
+        margin-bottom: 0px;
+        text-align: right;
+        font-size: 18px;
+        line-height: 1.6;
+        display: none;
+    }
+#historyPanel {
+    display: none;
+    position: fixed;
+    left: 0;
+    top: 74px;
+    width: 350px;
+    height: calc(100vh - 74px);
+    background: #f1f6fe;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    z-index: 100;
+    padding: 20px;
+    border-radius: 8px 0 0 8px;
+    transition: transform 0.3s ease;
+    overflow-y: hidden; /* 修改 */
+    box-sizing: border-box; /* 新增 */
+}
+
+.scroll-wrapper {
+    height: calc(100% - 40px); /* 标题高度补偿 */
+    overflow: hidden;
+}
+
+#historyList {
+    display: block;
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    height: 100%; /* 修改 */
+    overflow-y: auto; /* 保持 */
+    box-sizing: border-box; /* 新增 */
+    flex-direction: column;
+    box-sizing: border-box; /* 包含padding */
+}
+
+#historyList li {
+    display: block;
+    padding: 7px;
+    border-bottom: 1px solid #eaeaea;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+    #historyPanel h3 {
+        margin-top: 0;
+        margin-bottom: 15px;
+        color: #34495e;
+    }
+
+
+    #historyList li:hover {
+        background-color: #f5f5f5;
+    }
+
+/* 历史记录内容区域 */
+.history-content {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 60px;
+}
+
+.history-footer {
+    background: #f1f6fe;
+    padding: 15px 20px;
+    border-top: 1px solid #eaeaea;
+    box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+    min-height: 60px; /* 确保底部按钮区域有固定高度 */
+}
+/* 清空按钮样式 */
+.clear-history-btn {
+    width: calc(100% - 40px); /* 左右留白 */
+    margin: 0 20px;
+    padding: 10px;
+    background: linear-gradient(90deg, #6D3AE6 0%, #3857E9 90%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 18px;
+}
+
+.clear-history-btn:hover {
+    background: linear-gradient(90deg, #6D3AE6 0%, #3857E9 50%);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(255,77,77,0.2);
+}
+/* Toast提示样式 */
+.toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.9);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    opacity: 0;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.toast.show {
+    opacity: 1;
+    bottom: 40px;
+}
+
+.toast-success {
+    background: #4CAF50;
+}
+
+.toast-error {
+    background: linear-gradient(90deg, rgb(109, 58, 230) 0%, rgb(56, 87, 233) 100%);
+}
+
+.toast-info {
+    background: #2196F3;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 3px;
+    background: rgba(255,255,255,0.3);
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    animation: progress 2s linear;
+}
+
+@keyframes progress {
+    from { width: 100% }
+    to { width: 0% }
+}
+</style>
+
+<body>
+    <!-- 新增的导航栏 -->
+    <nav class="top-nav">
+        <div class="logo">
+            <img src="../static/images/logo3.png" alt="Logo" />
+        </div>
+        <div class="top-center">
+           <div id="my">
+                <a href="#">我的</a>
+            </div>
+            <div id="historyPanel">
+                <h3>历史记录</h3>
+                <div class="history-content"> <!-- 新增内容容器 -->
+                    <ul id="historyList">
+                        <!-- 历史记录项 -->
+                    </ul>
+                </div>
+                <div class="history-footer"> <!-- 新增底部按钮容器 -->
+                    <button class="clear-history-btn">清空所有记录</button>
+                </div>
+            </div>
+            <div id="about"><a href="#">关于我们</a></div>
+            <div id="contact">
+                <a href="#">联系我们</a>
+                <div id="contactInfo" style="display: none; position: absolute; background: white; padding: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 100;">
+                    <p>电话：123-456-7890</p>
+                    <p>邮箱：contact@example.com</p>
+                </div>
+            </div>
+            <div id="help"><a href="#">帮助</a></div>
+        </div>
+        <div class="top-right">
+            <!-- 版本切换下拉菜单 -->
+            <div class="dropdown" style="margin-right: 12px;">
+                <button class="btn btn-success dropdown-toggle" type="button" id="versionDropdown"
+                        data-bs-toggle="dropdown" aria-expanded="false" style="width: 129px;display: flex;align-items: center;justify-content: center">
+                    <span id="currentVersion">PORT：A</span>
+                    <img src="../static/images/arrow2.png" style="width: 15px; margin-left: 5px;" />
+                </button>
+                    <ul class="dropdown-menu" aria-labelledby="versionDropdown" id="versionOptions" style="display: none;">
+                        <li><a class="dropdown-item" href="#" onclick="switchVersion('v1')">PORT：A</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="switchVersion('v2')">PORT：B</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="switchVersion('v3')">PORT：C</a></li>
+                    </ul>
+            </div>
+
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#registerModal"
+                    style="margin-right: 12px;display: flex;align-items: center;justify-content: center">注册</button>
+            {% if user.is_authenticated %}
+            <a class="btn btn-danger" href="{% url 'logout' %}" style="height: 42px;box-sizing: border-box">注销</a>
+            {% else %}
+            <button class="login" data-bs-toggle="modal" data-bs-target="#loginModal">登录</button>
+            {% endif %}
+        </div>
+    </nav>
+    <div style="height: 100vh;display: flex;flex-direction: column;align-items: center;width: 100%;">
+        <div class="header">
+            <img src="../static/images/logo2.png" alt="Logo" style="height: 73px;" />
+            <h1>伪造新闻检测</h1>
+        </div>
+        <div class="description">
+            <p>
+                <br>
+                虚拟新闻检测基于多种先进的人工智能模型，构造数百万级别的数据进行训练，能够识别出人类和AI的书写模式。该系统不仅具备优秀的英文检测能力，在处理中文数据方面表现尤为出色。
+            </p>
+        </div>
+        <div class="content-wrapper">
+            <div class="left-a">
+                <div class="container">
+                    <div class="left-panel" style="position: relative;">
+                        <!-- 菜单选择区域 -->
+                        <div class="input-menu">
+                            <button class="menu-btn active" onclick="switchInputType('text')" style="display: flex;align-items: center;
+                            justify-content: center;">
+                                <img src="../static/images/text.png"
+                                    style="width: 18px;margin-right: 10px;" />文本</button>
+                            <button class="menu-btn" onclick="switchInputType('file')" style="display: flex;align-items: center;
+                            justify-content: center;">
+                                <img src="../static/images/file.png"
+                                    style="width: 18px;margin-right: 10px;" />&nbsp;文档</button>
+                            <button class="menu-btn" onclick="switchInputType('link')" style="display: flex;align-items: center;
+                            justify-content: center;">
+                                <img src="../static/images/link.png"
+                                    style="width: 20px;margin-right: 10px;" />链接</button>
+                        </div>
+
+                        <!-- 输入区域 -->
+                        <div class="text-input">
+                            <div hidden>{% csrf_token %}</div>
+                            <textarea id="inputArea" placeholder="请输入文本内容..." onclick="handleFileInput()"></textarea>
+                            <div id="fileDisplay" style="margin-top: 10px; color: #666;"></div>
+                            <div class="buttons">
+                                <button class="clear-btn" onclick="clearResult()">
+                                    清空
+                                </button>
+                                <button class="detect" onclick="validateInput()">立即检测</button>
+                            </div>
+                        </div>
+                        <input type="file" id="fileInput" style="display: none;" accept=".docx,.pdf,.txt,.xlsx" />
+{#                        <div#}
+{#                            style="position: absolute;bottom: 0;left: 48px;bottom: 22px;color: #888888;font-weight: 500;">#}
+{#                            文件路径:/media/uploads/test_sPuvKF6.docx</div>#}
+                    </div>
+                    <div class="right-panel" style="display: none;">
+                        <div class="result">
+{#                            <h2>AI生成概率：<span id="aiProbability">0%</span></h2>#}
+                            <div class="progress-bar">
+{#                                <div class="progress" id="progressBar"></div>#}
+                            </div>
+                            <p id="resultText">检测结果仅供参考，AI检测技术仍在不断进步中。</p>
+                        </div>
+                        <div class="analysis">
+                            <h2>检测分析数据</h2>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>指标</th>
+                                        <th>数值</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>文本长度</td>
+                                        <td id="textLength">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td>词汇多样性</td>
+                                        <td id="vocabularyDiversity">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td>句式复杂度</td>
+                                        <td id="sentenceComplexity">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td>逻辑连贯性</td>
+                                        <td id="logicalCoherence">0</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="linkContent" class="analysis">
+
+                        </div>
+                    </div>
+                    <div class="right-panel" style="padding: 0;width: 424px">
+                        <div class="schedule-box">
+                            <!-- 背景图 -->
+                            <img src="../static/images/download_bg.png" class="schedule-bg" />
+                            <h2>伪造新闻概率</h2>
+                            <!-- 进度数据 -->
+                            <div class="data-box">
+                                <img src="../static/images/download_box.png" class="schedule-icon" />
+                                <div>
+                                    <span class="data-txt" id="aiProbability"></span>
+                                </div>
+                            </div>
+                            <!-- 进度条 -->
+                            <div class="progressbar-box">
+                                <!-- <img src="../static/images/active_box.png" class="progress-icon" /> -->
+                                <div class="progress-icon" id="progressIcon"></div>
+                                <img src="../static/images/active_line.png" class="progress-line" id="progressLine"/>
+                                <!-- <div class="progress-line"></div> -->
+                                <img src="../static/images/active_bg.png" class="progress-bg" />
+                            </div>
+                            <!-- 下载报表 -->
+                            <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+                            <button class="download-btn" onclick="generateReport()">
+                                <span>生成报表下载</span>
+                                <img src="../static/images/arrow.png" class="arrow" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="right-a">
+                <div class="title-box">
+                    <img src="../static/images/tit_bg.png" class="img-bg" />
+                    <h3>&nbsp;&nbsp;&nbsp;高亮文本分析</h3>
+                </div>
+                <div>
+                    <div id="scrollableTextContainer" style="font-weight: 400;
+                    font-size: 18px;
+                    color: #333333;
+                    line-height: 25px;
+                    text-align: justify;
+                    ">
+                        <!-- 高亮文本将在这里显示 -->
+
+                    </div>
+                </div>
+                <div>
+                    <br><br>
+                    <div class="totallength" id="totallength">字数：<span id="total_length">0</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+// 历史记录逻辑
+function toggleHistoryPanel() {
+    const historyPanel = document.getElementById('historyPanel');
+    if (historyPanel.style.display === 'block') {
+        historyPanel.style.display = 'none';
+        historyPanel.style.transform = 'translateX(-100%)';
+    } else {
+        historyPanel.style.display = 'block';
+        historyPanel.style.transform = 'translateX(0)';
+    }
+}
+
+// 初始化页面时隐藏历史记录面板
+window.onload = function () {
+    const historyPanel = document.getElementById('historyPanel');
+    historyPanel.style.display = 'none';
+    historyPanel.style.transform = 'translateX(-100%)';
+};
+
+// 点击页面其他地方隐藏历史记录面板
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('#my')) {
+        const historyPanel = document.getElementById('historyPanel');
+        historyPanel.style.display = 'none';
+        historyPanel.style.transform = 'translateX(-100%)';
+    }
+});
+function addToHistory(inputArea) {
+    const historyList = document.getElementById('historyList');
+    const newItem = document.createElement('li');
+
+    // 截断内容
+    newItem.textContent = inputArea.length > 10 ? inputArea.substring(0, 10) + '...' : inputArea;
+
+    // 插入到列表顶部
+    historyList.insertBefore(newItem, historyList.firstChild);
+
+    // 限制历史记录数量
+    if (historyList.children.length > 20) {
+        historyList.removeChild(historyList.lastChild);
+    }
+}
+// 清空历史记录函数
+function clearAllHistory() {
+    const historyList = document.getElementById('historyList');
+
+    // 清空前端显示
+    while (historyList.firstChild) {
+        historyList.removeChild(historyList.firstChild);
+    }
+
+    // 如果用户已登录，请求后端删除
+    if ({% if user.is_authenticated %}true{% else %}false{% endif %}) {
+        fetch('accounts/clear-history/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('清空失败');
+            showToast('success', '🗑️ 历史记录已清空');
+        })
+        .catch(error => {
+            console.error('清空错误:', error);
+            showToast('error', '🗑️ 历史记录已清空');
+        });
+    } else {
+        showToast('info', '临时记录已清空');
+    }
+
+}
+
+// 绑定点击事件
+document.querySelector('.clear-history-btn').addEventListener('click', function(e) {
+    e.stopPropagation();
+    if (confirm('⚠️ 确定要永久删除所有历史记录吗？')) {
+        clearAllHistory();
+    }
+});
+
+// Toast显示控制
+function showToast(type, message) {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+        <span>${message}</span>
+        <div class="progress-bar"></div>
+    `;
+
+    document.body.appendChild(toast);
+    setTimeout(() => toast.classList.add('show'), 10);
+
+    // 主要修改点：3000 → 2000
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 500);
+    }, 2000); // 2秒后开始隐藏
+}
+        // 页面加载时获取历史记录
+        document.addEventListener('DOMContentLoaded', function() {
+            if ({% if user.is_authenticated %}true{% else %}false{% endif %}) {
+                fetch('accounts/get-history/')
+                .then(response =>
+                    response.json())
+                .then(data => {
+                data.history.forEach(h => {
+                    addToHistory(h.content);
+                    });
+                })
+                .catch(error => console.error('加载历史记录失败:', error));
+            }
+             else {
+                console.log('用户未登录，不加载历史记录');
+            }
+        });
+// 为“我的”添加点击事件
+document.querySelector('#my > a').addEventListener('click', function(e) {
+    e.stopPropagation(); // 阻止事件冒泡
+    toggleHistoryPanel();
+});
+ // 联系我们逻辑
+function toggleContactInfo() {
+    const contactInfo = document.getElementById('contactInfo');
+    if (contactInfo.style.display === 'block') {
+        contactInfo.style.display = 'none';
+    } else {
+        contactInfo.style.display = 'block';
+    }
+}
+
+// 初始化页面时隐藏联系信息
+window.onload = function () {
+    const contactInfo = document.getElementById('contactInfo');
+    contactInfo.style.display = 'none';
+};
+
+// 点击页面其他地方隐藏联系信息
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('#contact')) {
+        const contactInfo = document.getElementById('contactInfo');
+        contactInfo.style.display = 'none';
+    }
+});
+
+// 为“联系我们”添加点击事件
+document.querySelector('#contact > a').addEventListener('click', function(e) {
+    e.stopPropagation(); // 阻止事件冒泡
+    toggleContactInfo();
+});
+        let currentVersion = 'v1';
+        let index = 0
+        let my = document.querySelector('#my')
+        let about = document.querySelector('#about')
+        let contact = document.querySelector('#contact')
+        let help = document.querySelector('#help')
+        my.className = "active-nav"
+        my.addEventListener('click', function () {
+            reset()
+            my.className = "active-nav"
+        })
+        about.addEventListener('click', function () {
+            reset()
+            about.className = "active-nav"
+        })
+        contact.addEventListener('click', function () {
+            reset()
+            contact.className = "active-nav"
+        })
+        help.addEventListener('click', function () {
+            reset()
+            help.className = "active-nav"
+        })
+        function reset() {
+            my.className = ""
+            about.className = ""
+            contact.className = ""
+            help.className = ""
+        }
+
+        // 显示/隐藏版本菜单
+        function toggleVersionMenu() {
+            const options = document.getElementById('versionOptions');
+            options.style.display = options.style.display === 'block' ? 'none' : 'block';
+        }
+        // 修改版本切换按钮的点击事件处理
+    document.getElementById('versionDropdown').addEventListener('click', function(e) {
+        e.stopPropagation(); // 阻止事件冒泡
+        const options = document.getElementById('versionOptions');
+        options.classList.toggle('show'); // 切换显示状态
+    });
+// 版本切换逻辑
+function switchVersion(version) {
+    const body = document.body;
+    const currentVerElement = document.getElementById('currentVersion');
+
+    // 移除所有版本样式
+    body.classList.remove('v1-theme', 'v2-theme', 'v3-theme');
+
+    // 应用新版本样式
+    if (version !== 'v1') {
+        body.classList.add(`${version}-theme`);
+    }
+
+    // 更新显示文本
+    if (version === 'v1') {
+        currentVerElement.textContent = 'PORT：A';
+    } else if (version === 'v2') {
+        currentVerElement.textContent = 'PORT：B';
+    } else if (version === 'v3') {
+        currentVerElement.textContent = 'PORT：C';
+    }
+
+    currentVersion = version;
+
+    // 根据版本调整布局
+    applyVersionLayout(version);
+
+    // 保存用户偏好
+    localStorage.setItem('ui-version', version);
+
+    // 显示切换提示
+    showVersionToast(`已切换到 ${currentVerElement.textContent}`);
+}
+
+// 初始化版本
+window.onload = function () {
+    const savedVersion = localStorage.getItem('ui-version') || 'v1';
+    switchVersion(savedVersion);
+
+    // 确保版本菜单默认隐藏
+    document.getElementById('versionOptions').style.display = 'none';
+};
+
+// 修改版本切换按钮的点击事件处理
+document.getElementById('versionDropdown').addEventListener('click', function(e) {
+    e.stopPropagation(); // 阻止事件冒泡
+    const options = document.getElementById('versionOptions');
+
+    // 使用 setTimeout 确保点击事件不会与其他事件冲突
+    setTimeout(() => {
+        if (options.style.display === 'block') {
+            options.style.display = 'none';
+        } else {
+            // 强制触发浏览器渲染
+            options.style.display = 'block';
+            options.offsetHeight; // 强制触发重排
+        }
+    }, 50); // 短暂延迟以确保显示稳定
+});
+
+// 阻止下拉菜单内部的点击事件冒泡
+document.getElementById('versionOptions').addEventListener('click', function(e) {
+    e.stopPropagation();
+});
+
+// 点击页面其他地方隐藏下拉列表
+document.addEventListener('click', function() {
+    const options = document.getElementById('versionOptions');
+    if (options.style.display === 'block') {
+        options.style.display = 'none';
+    }
+});
+
+// 版本特定布局调整
+function applyVersionLayout(version) {
+    const container = document.querySelector('.container');
+    switch (version) {
+        case 'v2':
+            break;
+        case 'v3':
+            break;
+        default:
+    }
+}
+
+// 显示版本切换提示
+function showVersionToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'version-toast';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 100);
+
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => {
+            document.body.removeChild(toast);
+        }, 300);
+    }, 2000);
+}
+
+
+        let currentType = 'text';
+
+        function switchInputType(type) {
+            clearResult();
+            currentType = type;
+            document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            const inputArea = document.getElementById('inputArea');
+            inputArea.placeholder = type === 'text' ? '请输入文本内容...' : type === 'file' ? '请上传文档...' : '请输入链接地址...';
+        }
+
+        // 高亮显示文本
+        function highlightText(data) {
+            const scrollableTextContainer = document.getElementById('scrollableTextContainer');
+            scrollableTextContainer.innerHTML = ''; // 清空容器
+
+            if (data && data.length > 0) {
+                data.forEach(item => {
+                    const p = document.createElement('p');
+                    p.textContent = item.content;
+
+                    // 根据概率设置样式
+                    if (item.probability >= 0 && item.probability < 30) {
+                        p.classList.add('green');
+                    } else if (item.probability >= 30 && item.probability < 50) {
+                        p.classList.add('chartreuse');
+                    } else if (item.probability >= 50 && item.probability < 70) {
+                        p.classList.add('yellow');
+                    } else if (item.probability >= 70 && item.probability < 90) {
+                        p.classList.add('orange');
+                    } else if (item.probability >= 90 && item.probability <= 100) {
+                        p.classList.add('red');
+                    }
+
+                    p.dataset.probability = `伪造概率: ${item.probability}%`;
+                    p.style.position = 'relative';
+                    p.style.marginBottom = '10px'; // 确保提示框不会被下一段文本遮住
+                    scrollableTextContainer.appendChild(p);
+                });
+            } else {
+                scrollableTextContainer.innerHTML = '<p>没有高亮文本可显示。</p>';
+            }
+        }
+
+        // 新增全局变量记录文件内容
+        let currentFileContent = null;
+        let currentFileName = null;
+
+        // 修改检测函数
+        function validateInput() {
+
+            // 缩小 left-a
+            const leftPanel = document.querySelector('.left-a');
+            leftPanel.classList.add('shrink');
+
+            // 显示 right-a
+            const rightPanel = document.querySelector('.right-a');
+            console.log(rightPanel); // 确保 rightPanel 正确获取到元素
+            rightPanel.classList.add('show');
+
+            const inputArea = document.getElementById('inputArea').value.trim();
+            addToHistory(inputArea);
+
+            // 如果用户已登录，保存历史记录到后端
+            if ({% if user.is_authenticated %}true{% else %}false{% endif %}) {
+                fetch('accounts/save-history/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: `content=${encodeURIComponent(inputArea)}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if(data.status !== 'success') {
+                        console.error('保存历史记录失败');
+                    }
+                });
+            }
+
+
+            // 格式校验
+            /*f ((currentType === 'text' && !inputArea) ||
+                (currentType === 'file' && !fileInput) ||
+                (currentType === 'link' && !isValidUrl(inputArea))) {
+                alert(`请输入有效的${currentType === 'text' ? '文本' : currentType === 'file' ? '文件' : '链接'}`);
+                return;
+            }
+            */
+            // 构造请求数据
+            let requestData = {};
+            if (currentType === 'file') {
+                requestData = { filepath: filepath };
+                const leftPanel = document.querySelector('.left-a');
+                leftPanel.classList.add('shrink');
+                // 显示 right-panel
+                const rightPanel = document.querySelector('.right-a');
+                rightPanel.classList.add('show');
+                sendRequest(requestData);
+            } else if (currentType === 'text') {
+                requestData = { text: inputArea };
+                // 判断文本长度，如果小于150字，不显示 right-a 和高亮文本分析
+                if (inputArea.length < 150) {
+                    sendRequest(requestData);
+                    // 不缩小左侧
+                    const leftPanel = document.querySelector('.left-a');
+                    leftPanel.classList.remove('shrink');
+                    // 不显示 right-a
+                    const rightPanel = document.querySelector('.right-a');
+                    rightPanel.classList.remove('show');
+                } else {
+                    // 缩小左侧
+                    const leftPanel = document.querySelector('.left-a');
+                    leftPanel.classList.add('shrink');
+                    // 显示 right-panel
+                    const rightPanel = document.querySelector('.right-a');
+                    rightPanel.classList.add('show');
+                    sendRequest(requestData);
+                }
+            } else if (currentType === 'link') {
+                requestData = { url: inputArea };
+                sendRequest(requestData);
+            }
+            //显示字数行
+            document.getElementById('totallength').style.display = 'block';
+        }// 页面加载时设置检测按钮的初始状态
+
+
+        window.onload = function () {
+            const detectButton = document.querySelector('.detect');
+            detectButton.disabled = true;
+        };
+
+        // added by fyn. 确保按钮默认不禁用
+        window.onload = function () {
+            document.querySelector('.detect').disabled = false;
+        };
+        // 获取输入框元素
+        const inputArea = document.getElementById('inputArea');
+
+
+        // 添加输入事件监听器
+        inputArea.addEventListener('input', function () {
+            // 在这里可以添加检测逻辑，例如自动检测或更新按钮状态
+            // 例如，如果输入内容超过一定长度，启用检测按钮
+            const detectButton = document.querySelector('.detect');
+            detectButton.disabled = inputArea.value.trim().length <= 0;
+        });
+
+        // 发送请求到后端
+        function sendRequest(requestData) {
+
+            if (currentVersion === 'v1' && currentType === 'link') {
+                fetch('http://127.0.0.1:8000/analyzer/bert_link_analyze/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestData)
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        // 更新结果展示（保持原有逻辑）
+                        updateResults(data);
+                        // 显示高亮文本
+                        highlightText(data);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('检测失败，请重试！');
+                    })
+                    .finally(() => {
+                        document.getElementById('loading').style.display = 'none';
+                        document.querySelector('.blur-background').style.display = 'none';
+                    });
+            }
+            else if (currentVersion === 'v2' && currentType === 'link') {
+                fetch('http://127.0.0.1:8000/analyzer/roberta_link_analyze/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestData)
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        // 更新结果展示（保持原有逻辑）
+                        updateResults(data);
+                        // 显示高亮文本
+                        highlightText(data);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('检测失败，请重试！');
+                    })
+                    .finally(() => {
+                        document.getElementById('loading').style.display = 'none';
+                        document.querySelector('.blur-background').style.display = 'none';
+                    });
+            }
+            else if (currentVersion === 'v1' && currentType === 'text') {
+                fetch('http://127.0.0.1:8000/analyzer/bert_content_analyze/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestData)
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('后端返回的数据:', data); // 调试：打印后端返回的数据
+                        // 更新结果展示（保持原有逻辑）
+                        updateResults(data);
+                        // 如果输入文本超过150字，显示高亮文本
+                        if (requestData.text && requestData.text.length > 30) {
+                            highlightText(data);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert(error)
+                        alert('检测失败，请重试！');
+                    })
+                    .finally(() => {
+                        document.getElementById('loading').style.display = 'none';
+                        document.querySelector('.blur-background').style.display = 'none';
+
+                        // 高光显示文本
+
+                        highlightText(data);
+                    })
+
+            }
+            else if (currentVersion === 'v2' && currentType === 'text') {
+                fetch('http://127.0.0.1:8000/analyzer/roberta_content_analyze/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestData)
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        // 更新结果展示（保持原有逻辑）
+                        updateResults(data);
+                        // 如果输入文本超过150字，显示高亮文本
+                        if (requestData.text && requestData.text.length > 150) {
+                            highlightText(data);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('检测失败，请重试！');
+                    })
+                    .finally(() => {
+                        document.getElementById('loading').style.display = 'none';
+                        document.querySelector('.blur-background').style.display = 'none';
+                    });
+            }
+            else if (currentVersion === 'v1' && currentType === 'file') {
+                fetch('http://127.0.0.1:8000/analyzer/bert_file_analyze/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestData)
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        // 更新结果展示（保持原有逻辑）
+                        updateResults(data);
+                        // 显示高亮文本
+                        highlightText(data);
+                    })
+                    .catch(error => {
+                        console.error('请求失败:', error);
+                        alert(`分析失败: ${error.message}`);
+                    })
+                    .finally(() => {
+                        document.getElementById('loading').style.display = 'none';
+                        document.querySelector('.blur-background').style.display = 'none';
+                    });
+            }
+            else if (currentVersion === 'v2' && currentType === 'file') {
+                fetch('http://127.0.0.1:8000/analyzer/roberta_file_analyze/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestData)
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        // 更新结果展示（保持原有逻辑）
+                        updateResults(data);
+                        // 显示高亮文本
+                        highlightText(data);
+                    })
+                    .catch(error => {
+                        console.error('请求失败:', error);
+                        alert(`分析失败: ${error.message}`);
+                    })
+                    .finally(() => {
+                        document.getElementById('loading').style.display = 'none';
+                        document.querySelector('.blur-background').style.display = 'none';
+                    });
+            }
+        }
+        // 提取结果更新逻辑
+        function updateResults(data) {
+            let aiProbability = 0;
+            let totalWeight = 0;
+            // 如果是段落检测结果，计算加权平均概率
+            if (Array.isArray(data) && data.length > 0) {
+                for (let item of data) {
+                    const weight = item.content.length; // 以段落长度为权重
+                    aiProbability += item.probability * weight;
+                    totalWeight += weight;
+                }
+                aiProbability = totalWeight > 0 ? (aiProbability / totalWeight) : 0;
+            } else {
+                aiProbability = data.probability || 0;
+            }
+
+            //document.getElementById('aiProbability').textContent = aiProbability.toFixed(2) + '%';
+            //document.getElementById('progressBar').style.width = aiProbability.toFixed(2) + '%';
+
+             // 更新概率显示
+            document.getElementById('aiProbability').textContent = aiProbability.toFixed(2) + '%';
+
+            // 更新进度条
+            const progressPercentage = aiProbability.toFixed(2);
+            const progressLine = document.getElementById('progressLine');
+            const progressIcon = document.getElementById('progressIcon');
+
+            progressLine.style.width = progressPercentage + '%';
+            progressIcon.style.left = `calc(${progressPercentage}% - 11.5px)`; // 11.5px是图标宽度的一半，确保居中
+
+
+            // 其他指标更新...
+            document.getElementById('total_length').textContent = totalWeight || '0';
+            document.getElementById('vocabularyDiversity').textContent = data.vocabularyDiversity || '0';
+            document.getElementById('sentenceComplexity').textContent = data.sentenceComplexity || '0';
+            document.getElementById('logicalCoherence').textContent = data.logicalCoherence || '0';
+        }
+
+        let fileInputWrapper = null;
+        let filepath = null;
+        // 处理文件输入
+        function handleFileInput() {
+            if (currentType === 'file') {
+                document.getElementById('fileInput').click();
+
+                document.getElementById('fileInput').addEventListener('change', function (e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const formData = new FormData();
+                        formData.append('file', file);
+
+                        // 获取CSRF令牌的两种方式
+                        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+                        // 方式1：添加到请求头（推荐）
+                        // 方式2：同时添加到表单数据（双重保障）
+                        formData.append('csrfmiddlewaretoken', csrftoken);
+
+                        fetch('/analyzer/upload/', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': csrftoken  // 关键修改点
+                            },
+                            body: formData
+                        })
+                            .then(response => {
+                                if (!response.ok) throw new Error('上传失败');
+                                return response.json();
+                            })
+                            .then(data => {
+                                document.getElementById('inputArea').value = `已上传文件：${data.filename}`;
+                                document.getElementById('fileDisplay').textContent = `文件路径：${data.filepath}`;
+                                filepath = data.filepath;
+                            })
+                            .catch(error => {
+                                console.error('上传错误:', error);
+                                alert('文件上传失败: ' + error.message);
+                            });
+                    }
+                });
+            }
+        }
+
+
+        //
+        // fyn temp test
+        function handleFileInput_fyn() {
+            document.getElementById('fileInput').click();
+
+            document.getElementById('fileInput').addEventListener('change', function (e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const formData = new FormData();
+                    formData.append('file', file);
+
+                    // 获取CSRF令牌的两种方式
+                    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+                    // 方式1：添加到请求头（推荐）
+                    // 方式2：同时添加到表单数据（双重保障）
+                    formData.append('csrfmiddlewaretoken', csrftoken);
+
+                    fetch('/analyzer/upload/', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': csrftoken  // 关键修改点
+                        },
+                        body: formData
+                    })
+                        .then(response => {
+                            if (!response.ok) throw new Error('上传失败');
+                            return response.json();
+                        })
+                        .then(data => {
+                            document.getElementById('inputArea').value = `已上传文件：${data.filename}`;
+                            document.getElementById('fileDisplay').textContent = `文件路径：${data.filepath}`;
+                            filepath = data.filepath;
+                        })
+                        .catch(error => {
+                            console.error('上传错误:', error);
+                            alert('文件上传失败: ' + error.message);
+                        });
+                }
+            });
+        }
+
+
+        // 监听文件选择事件
+        document.getElementById('fileInput').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('inputArea').value = `已选择文件：${file.name}`;
+                document.getElementById('fileDisplay').textContent = `已选择文件：${file.name}`;
+            }
+        });
+        //
+        // .pdf generate
+        async function generateReport(){
+            try{
+                // 获取高亮文本内容
+                const textElements = document.querySelectorAll('#scrollableTextContainer p');
+                let textContent = '';
+                textElements.forEach(p => {
+                    textContent += p.textContent + '\n\n';
+                });
+
+                // 获取概率值
+                const probability = document.getElementById('aiProbability').textContent;
+              
+                const response = await fetch('http://127.0.0.1:8000/analyzer/generate_pdf/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        text: textContent,
+                        probability: probability
+                    })
+                });
+                 if (response.ok) {
+                    const blob = await response.blob();
+                    const downloadUrl = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = `fact_check_report_${Date.now()}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(downloadUrl);
+                    document.body.removeChild(a);
+                } else {
+                    const error = await response.json();
+                    alert(`生成失败: ${error.message}`);
+                }
+            } catch (error) {
+                console.error('生成错误:', error);
+                alert('生成失败，请检查控制台日志');
+            }
+        }
+        // 获取CSRF令牌
+
+
+        function clearResult() {
+            // 恢复 left-a 板块的宽度
+            const leftPanel = document.querySelector('.left-a');
+            leftPanel.classList.remove('shrink');
+
+            // 隐藏 right-a 板块
+            const rightPanel = document.querySelector('.right-a');
+            rightPanel.classList.remove('show');
+
+            // 清空输入框
+            document.getElementById('inputArea').value = '';
+
+            // 清空文件输入
+            document.getElementById('fileInput').value = '';
+
+            // 清空文件显示区域
+            document.getElementById('fileDisplay').textContent = '';
+
+            // 重置检测结果
+            document.getElementById('aiProbability').textContent = '0%';
+            //document.getElementById('progressBar').style.width = '0%';
+            document.getElementById('resultText').textContent = '检测结果仅供参考，AI检测技术仍在不断进步中。';
+
+            // 重置进度条
+            document.getElementById('progressLine').style.width = '0%';
+            document.getElementById('progressIcon').style.left = '0';
+
+            // 重置分析数据
+            document.getElementById('textLength').textContent = '0';
+            document.getElementById('vocabularyDiversity').textContent = '0';
+            document.getElementById('sentenceComplexity').textContent = '0';
+            document.getElementById('logicalCoherence').textContent = '0';
+            document.getElementById('total_length').textContent = '0';
+            // 清空链接内容
+            //document.getElementById('linkContent').innerHTML = '<h2>链接内容</h2>';
+
+            // 清空高亮文本容器
+            document.getElementById('scrollableTextContainer').innerHTML = '';
+
+        
+            // 隐藏加载动画
+            /*document.getElementById('loading').style.display = 'none';
+            document.querySelector('.blur-background').style.display = 'none';*/
+
+            // 重置当前检测类型
+            currentType = 'text';
+            document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector('.menu-btn:first-child').classList.add('active');
+
+            // 重置输入框占位符
+            document.getElementById('inputArea').placeholder = '请输入文本内容...';
+        }
+         window.onload = function () {
+            clearResult();
+        };
+    </script>
+</body>
+{% endblock %}

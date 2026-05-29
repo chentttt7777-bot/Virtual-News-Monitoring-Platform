@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Probability Color Display</title>
+    <style>
+        .green {
+            background-color: rgba(0, 128, 0, 0.5);
+        }
+
+        .yellow {
+            background-color: rgba(255, 255, 0, 0.5);
+        }
+
+        .orange {
+            background-color: rgba(255, 165, 0, 0.5);
+        }
+
+        .red {
+            background-color: rgba(255, 0, 0, 0.5);
+        }
+
+        p {
+            display: inline;
+            margin: 0;
+            position: relative;
+            cursor: pointer;
+        }
+
+        p.green:hover {
+            background-color: rgba(0, 128, 0, 1);
+        }
+
+        p.yellow:hover {
+            background-color: rgba(255, 255, 0, 1);
+        }
+
+        p.orange:hover {
+            background-color: rgba(255, 165, 0, 1);
+        }
+
+        p.red:hover {
+            background-color: rgba(255, 0, 0, 1);
+        }
+
+        p::after {
+            content: attr(data-probability);
+            position: absolute;
+            top: calc(100% + 5px);
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        p::before {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 5px;
+            border-style: solid;
+            border-color: transparent transparent rgba(0, 0, 0, 0.8) transparent;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        p:hover::after,
+        p:hover::before {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="text-container"></div>
+    <script>
+        // 模拟从后台获取的数据
+        const mockData = "这是第一段文本。0.2这是第二段文本。0.6这是第三段文本。0.8这是第四段文本。0.95";
+
+        function splitData(data) {
+            const regex = /([\s\S]*?)(\d+\.\d+)/g;
+            const result = [];
+            let match;
+            while ((match = regex.exec(data))!== null) {
+                result.push({
+                    paragraph: match[1],
+                    probability: parseFloat(match[2])
+                });
+            }
+            return result;
+        }
+
+        function displayTextWithColor(data) {
+            const container = document.getElementById('text-container');
+            data.forEach(item => {
+                const p = document.createElement('p');
+                p.textContent = item.paragraph;
+                if (item.probability >= 0 && item.probability < 0.5) {
+                    p.classList.add('green');
+                } else if (item.probability >= 0.5 && item.probability < 0.7) {
+                    p.classList.add('yellow');
+                } else if (item.probability >= 0.7 && item.probability < 0.9) {
+                    p.classList.add('orange');
+                } else if (item.probability >= 0.9 && item.probability <= 1) {
+                    p.classList.add('red');
+                }
+                p.dataset.probability = `虚假概率: ${item.probability}`;
+                container.appendChild(p);
+            });
+        }
+
+        const processedData = splitData(mockData);
+        displayTextWithColor(processedData);
+    </script>
+</body>
+
+</html>    
